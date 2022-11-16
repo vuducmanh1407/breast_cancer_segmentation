@@ -121,12 +121,11 @@ class UNet(nn.Module):
     """
     ## U-Net
     """
-    def __init__(self, in_channels: int, out_channels: int, *args, abc=123, **kwargs):
+    def __init__(self, in_channels: int, out_channels: int, *args, **kwargs):
         """
         :param in_channels: number of channels in the input image
         :param out_channels: number of channels in the result feature map
         """
-        print(kwargs["g"])
         super().__init__()
 
         # Double convolution layers for the contracting path.
@@ -188,4 +187,4 @@ class UNet(nn.Module):
         return x
 
 if __name__ == "__main__":
-    net = UNet(224, 224, 1, 2, abc=122, g="s", h="k")
+    net = UNet(224, 224)
