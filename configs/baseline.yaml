@@ -2,7 +2,7 @@ feeder: dataset.dataloader.BaseFeeder
 
 feeder_args:
   prefix: ''
-  folder_path: E:\CSAWS\CSAW-S\CsawS\anonymized_dataset
+  folder_path: /workspace/dataset/CSAWS/CSAW-S/CsawS/
   mean: 0.0
   std: 1.0
   mode: train
@@ -16,7 +16,7 @@ batch_size: 2
 random_seed: 0
 test_batch_size: 8
 num_worker: 10
-device: 0,1,2
+device: 1
 log_interval: 50
 eval_interval: 1
 save_interval: 5
@@ -37,10 +37,8 @@ optimizer_args:
   start_epoch: 1
   nesterov: False
 
-model: slr_network.SLRModel
+model: models.unet.unet.UNet
 decode_mode: beam
 model_args:
-  num_classes: 1296
-  c2d_type: resnet18
-  conv_type: 2
-  use_bn: 1
+  in_channels: 1
+  out_channels: 1

@@ -41,11 +41,11 @@ class Processor():
                 seq_train(self.data_loader['train'], self.model, self.optimizer,
                           self.device, epoch, self.recoder)
                 if eval_model:
-                    dev_wer = seq_eval(self.arg, self.data_loader['dev'], self.model, self.device,
+                    dev_mae = seq_eval(self.arg, self.data_loader['test'], self.model, self.device,
                                        'dev', epoch, self.arg.work_dir, self.recoder, self.arg.evaluate_tool)
-                    self.recoder.print_log("Dev WER: {:05.2f}%".format(dev_wer))
+                    self.recoder.print_log("Dev MAE: {:.4f}".format(dev_mae))
                 if save_model:
-                    model_path = "{}dev_{:05.2f}_epoch{}_model.pt".format(self.arg.work_dir, dev_wer, epoch)
+                    model_path = "{}dev_{:05.2f}_epoch{}_model.pt".format(self.arg.work_dir, dev_mae, epoch)
                     seq_model_list.append(model_path)
                     print("seq_model_list", seq_model_list)
                     self.save_model(epoch, model_path)
@@ -85,24 +85,22 @@ class Processor():
         }, save_path)
 
     def loading(self):
-        # self.device.set_device(self.arg.device)
+        self.device.set_device(self.arg.device)
         print("Loading model")
-        # model_class = import_class(self.arg.model)
-        # model = model_class(
-        #     **self.arg.model_args,
-        #     gloss_dict=self.gloss_dict,
-        #     loss_weights=self.arg.loss_weights,
-        # )
-        # optimizer = utils.Optimizer(model, self.arg.optimizer_args)
+        model_class = import_class(self.arg.model)
+        model = model_class(
+            **self.arg.model_args,
+        )
+        optimizer = utils.Optimizer(model, self.arg.optimizer_args)
 
-        # if self.arg.load_weights:
-        #     self.load_model_weights(model, self.arg.load_weights)
-        # elif self.arg.load_checkpoints:
-        #     self.load_checkpoint_weights(model, optimizer)
-        # model = self.model_to_device(model)
+        if self.arg.load_weights:
+            self.load_model_weights(model, self.arg.load_weights)
+        elif self.arg.load_checkpoints:
+            self.load_checkpoint_weights(model, optimizer)
+        model = self.model_to_device(model)
         print("Loading model finished.")
         self.load_data()
-        return None, None
+        return model, optimizer
 
     def model_to_device(self, model):
         model = model.to(self.device.output_device)
@@ -159,7 +157,7 @@ class Processor():
         for idx, (mode, train_flag) in enumerate(dataset_list):
             arg = self.arg.feeder_args
             # arg["prefix"] = self.arg.dataset_info['dataset_root']
-            # arg["mode"] = mode.split("_")[0]
+            arg["mode"] = mode.split("_")[0]
             # arg["transform_mode"] = train_flag
             self.dataset[mode] = self.feeder(**arg)
             self.data_loader[mode] = self.build_dataloader(self.dataset[mode], mode, train_flag)
@@ -204,4 +202,4 @@ if __name__ == '__main__':
         args.dataset_info = yaml.load(f, Loader=yaml.FullLoader)
     processor = Processor(args)
     utils.pack_code("./", args.work_dir)
-    # processor.start()
+    processor.start()

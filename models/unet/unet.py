@@ -183,8 +183,14 @@ class UNet(nn.Module):
         # Final $1 \times 1$ convolution layer
         x = self.final_conv(x)
 
+        # add sigmoid to generate prob distribution
+        x = torch.sigmoid(x)
         #
         return x
+    
+    def loss_calculation(self, logit, gt):
+        distribution = nn.Sigmoid()
+        return nn.BCELoss()(distribution(logit), gt)
 
 if __name__ == "__main__":
     net = UNet(224, 224)

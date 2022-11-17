@@ -30,13 +30,15 @@ class BaseFeeder(data.Dataset):
         self.files = []
         self.mean = mean
         self.std = std
-        for file in os.listdir(prefix + folder_path):
-            d = os.path.join(prefix, folder_path, file)
+        folder = os.path.join(prefix, folder_path, mode, "")
+        print(folder)
+        for file in os.listdir(folder):
+            d = os.path.join(folder, file)
             if os.path.isdir(d):
-                if os.path.isfile(d + "\\{}_0".format(file) + ".png"):
-                    self.files.append(d + "\\{}_0".format(file))
-                if os.path.isfile(d + "\\{}_1".format(file) + ".png"):
-                    self.files.append(d + "\\{}_1".format(file))
+                if os.path.isfile(d + "/{}_0".format(file) + ".png"):
+                    self.files.append(d + "/{}_0".format(file))
+                if os.path.isfile(d + "/{}_1".format(file) + ".png"):
+                    self.files.append(d + "/{}_1".format(file))
 
     # getitem attribute
     def __getitem__(self, idx):
@@ -44,11 +46,13 @@ class BaseFeeder(data.Dataset):
         image = cv2.imread(img_path, cv2.IMREAD_ANYDEPTH)
         image = cv2.resize(image, (224,224), interpolation = cv2.INTER_AREA)
         image = np.expand_dims(image, axis=0)
+        image = torch.from_numpy(image).type(torch.FloatTensor)
 
         mask_path = self.files[idx] + "_cancer.png"
         mask = cv2.imread(mask_path, cv2.IMREAD_ANYDEPTH)
         mask = cv2.resize(mask, (224,224), interpolation = cv2.INTER_AREA)        
-        mask = np.expand_dims(image, axis=0)
+        mask = torch.from_numpy(mask).type(torch.FloatTensor)
+        mask = torch.unsqueeze(mask, 0)
 
         return image, mask
 

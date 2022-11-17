@@ -14,7 +14,7 @@ def pack_code(git_root, run_dir):
         )
         diff_process = subprocess.run(
             ['git', 'diff', 'HEAD'],
-            check=True, stdout=subprocess.PIPE, text=True,
+            check=True, stdout=subprocess.PIPE, universal_newlines=True,
         )
         if diff_process.stdout:
             logger.warning('Working tree is dirty. Patch:\n%s', diff_process.stdout)

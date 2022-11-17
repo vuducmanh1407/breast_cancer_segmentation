@@ -8,7 +8,7 @@ import torch.nn as nn
 from tqdm import tqdm
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-from evaluation.slr_eval.wer_calculation import evaluate
+from utils.metrics import calculate_metrics
 
 
 def seq_train(loader, model, optimizer, device, epoch_idx, recoder):
@@ -16,12 +16,10 @@ def seq_train(loader, model, optimizer, device, epoch_idx, recoder):
     loss_value = []
     clr = [group['lr'] for group in optimizer.optimizer.param_groups]
     for batch_idx, data in enumerate(loader):
-        vid = device.data_to_device(data[0])
-        vid_lgt = device.data_to_device(data[1])
-        label = device.data_to_device(data[2])
-        label_lgt = device.data_to_device(data[3])
-        ret_dict = model(vid, vid_lgt, label=label, label_lgt=label_lgt)
-        loss = model.criterion_calculation(ret_dict, label, label_lgt)
+        image = device.data_to_device(data[0])
+        mask = device.data_to_device(data[1])        
+        logit = model(image)
+        loss = model.loss_calculation(logit, mask)
         if np.isinf(loss.item()) or np.isnan(loss.item()):
             print(data[-1])
             continue
@@ -42,49 +40,27 @@ def seq_train(loader, model, optimizer, device, epoch_idx, recoder):
 def seq_eval(cfg, loader, model, device, mode, epoch, work_dir, recoder,
              evaluate_tool="python"):
     model.eval()
-    total_sent = []
-    total_info = []
-    total_conv_sent = []
-    stat = {i: [0, 0] for i in range(len(loader.dataset.dict))}
+
+    metrics = 0
+    numOfData = 0
     for batch_idx, data in enumerate(tqdm(loader)):
         recoder.record_timer("device")
-        vid = device.data_to_device(data[0])
-        vid_lgt = device.data_to_device(data[1])
-        label = device.data_to_device(data[2])
-        label_lgt = device.data_to_device(data[3])
+        image = device.data_to_device(data[0])
+        mask = device.data_to_device(data[1]) 
         with torch.no_grad():
-            ret_dict = model(vid, vid_lgt, label=label, label_lgt=label_lgt)
-
-        total_info += [file_name.split("|")[0] for file_name in data[-1]]
-        total_sent += ret_dict['recognized_sents']
-        total_conv_sent += ret_dict['conv_sents']
+            logit = model(image)
+        
+        numOfData += image.size(0)
+        metrics += calculate_metrics(nn.Sigmoid()(logit), mask, type="mae")*image.size(0)
     try:
-        python_eval = True if evaluate_tool == "python" else False
-        write2file(work_dir + "output-hypothesis-{}.ctm".format(mode), total_info, total_sent)
-        write2file(work_dir + "output-hypothesis-{}-conv.ctm".format(mode), total_info,
-                   total_conv_sent)
-        conv_ret = evaluate(
-            prefix=work_dir, mode=mode, output_file="output-hypothesis-{}-conv.ctm".format(mode),
-            evaluate_dir=cfg.dataset_info['evaluation_dir'],
-            evaluate_prefix=cfg.dataset_info['evaluation_prefix'],
-            output_dir="epoch_{}_result/".format(epoch),
-            python_evaluate=python_eval,
-        )
-        lstm_ret = evaluate(
-            prefix=work_dir, mode=mode, output_file="output-hypothesis-{}.ctm".format(mode),
-            evaluate_dir=cfg.dataset_info['evaluation_dir'],
-            evaluate_prefix=cfg.dataset_info['evaluation_prefix'],
-            output_dir="epoch_{}_result/".format(epoch),
-            python_evaluate=python_eval,
-            triplet=True,
-        )
+        ret = metrics/numOfData
     except:
         print("Unexpected error:", sys.exc_info()[0])
-        lstm_ret = 100.0
+        ret = 100.0
     finally:
         pass
-    recoder.print_log(f"Epoch {epoch}, {mode} {lstm_ret: 2.2f}%", f"{work_dir}/{mode}.txt")
-    return lstm_ret
+    recoder.print_log(f"Epoch {epoch}, {mode} {ret: .4f}", f"{work_dir}/{mode}.txt")
+    return ret
 
 
 def seq_feature_generation(loader, model, device, mode, work_dir, recoder):
