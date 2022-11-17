@@ -201,5 +201,5 @@ if __name__ == '__main__':
     with open(f"./configs/{args.dataset}.yaml", 'r') as f:
         args.dataset_info = yaml.load(f, Loader=yaml.FullLoader)
     processor = Processor(args)
-    utils.pack_code("./", args.work_dir)
+    # utils.pack_code("./", args.work_dir)
     processor.start()
