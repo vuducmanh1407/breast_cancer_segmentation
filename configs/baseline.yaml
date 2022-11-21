@@ -2,7 +2,7 @@ feeder: dataset.dataloader.BaseFeeder
 
 feeder_args:
   prefix: ''
-  folder_path: /workspace/dataset/CSAWS/CSAW-S/CsawS/
+  folder_path: /content/CSAW-S/CsawS/
   mean: 0.0
   std: 1.0
   mode: train
@@ -16,7 +16,7 @@ batch_size: 2
 random_seed: 0
 test_batch_size: 8
 num_worker: 10
-device: 1
+device: 0
 log_interval: 50
 eval_interval: 1
 save_interval: 5
